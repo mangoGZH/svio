@@ -56,7 +56,7 @@ namespace svo{
 
         static bool fopened = false;
         static ofstream gw,scale,biasa,condnum,time,biasg;
-        string  filepath = "/home/gzh/vio_init_outfile/";
+        string  filepath = "/home/gzh/SVIO_rebuild/svio_outfile/";
         if(!fopened)
         {
             gw.open(filepath+"gw.txt");
@@ -106,7 +106,7 @@ namespace svo{
         cv::Mat Rcb = Rbc.t();
         cv::Mat pcb = -Rcb * pbc;
 
-        vector<Mat> Pose_c_w;  //Pose c to w
+        vector<Mat> Pose_c_w;              //Pose c to w
         vector<IMUPreintegrator> IMUPreInt;
         vector<KeyFrameInit* > kfInit;
 
@@ -177,18 +177,15 @@ namespace svo{
             lambda.copyTo(A.rowRange(3 * i + 0, 3 * i + 3).col(0));
             beta.copyTo(A.rowRange(3 * i + 0, 3 * i + 3).colRange(1, 4));
             gamma.copyTo(B.rowRange(3 * i + 0, 3 * i + 3));
-            // 论文<<visua-inertail monocular slam with map reuse>> 使用 -gamma. Then the scale and gravity vector is -xx
+
+            //cout << "<Scale and Gravity vector>computue :" << i << " times" << endl;
         }
         // Use svd to compute A*x=B, x=[s,gw] 4x1 vector
         cv::Mat w, u, vt;                                // A = u*w*vt,  u*w*vt*x=B
         cv::SVDecomp(A, w, u, vt, cv::SVD::MODIFY_A);    // Note w is 4x1 vector by SVDecomp()
-//        cout<<"u:"<<u<<endl;
-//        cout<<"vt:"<<vt<<endl;
-//        cout<<"w:"<<w<<endl;
-
-        //get condition number = 最大奇异值/最小奇异值
-        double condition_num = w.at<float>(0)/w.at<float>(3);
-//        cout<<"condition_num1:"<<condition_num<<endl;
+//        cout<<"u:"<<endl<<u<<endl;
+//        cout<<"vt:"<<endl<<vt<<endl;
+//        cout<<"w:"<<endl<<w<<endl;
 
         // Compute winv
         cv::Mat winv = cv::Mat::eye(4, 4, CV_32F);
@@ -203,7 +200,6 @@ namespace svo{
         cv::Mat x = vt.t() * winv * u.t() * B;
 
         // x=[s,gw] 4x1 vector
-        //cout<<"x:"<<x<<endl;
         double s_ = x.at<float>(0);    // scale should be positive
         cv::Mat gw_ = x.rowRange(1, 4);    // gravity should be about ~9.8
 //        cout << "(in step2 ) s_:\t" << s_ <<"\t"<< endl;
@@ -287,9 +283,7 @@ namespace svo{
 //        cout<<"vt2:"<<endl<<vt2<<endl;
 //        cout<<"w2:"<<endl<<w2<<endl;
 
-        //get condition number = 最大奇异值/最小奇异值
-        double condition_num2 = w2.at<float>(0)/w2.at<float>(5);
-        cout<<"condition_num2:"<<condition_num2<<endl;
+        cout<<"condition number:"<<w2.at<float>(0)/w2.at<float>(5)<<endl; //条件数 ＝ 最大奇异值 /最小奇异值
 
         cv::Mat w2inv = cv::Mat::eye(6, 6, CV_32F);
         for (int i = 0; i < 6; i++) {
@@ -365,7 +359,7 @@ namespace svo{
         {  //open file
             static bool fopened = false;
             static ofstream gw,scale,biasa,condnum,time,biasg,Rwi;  //ofstream fRwi(filepath+"Rwi.txt");
-            string  filepath = "/home/gzh/vio_init_outfile/";
+            string  filepath = "/home/gzh/SVIO_rebuild/svio_outfile/";
             if(!fopened)
             {
                 gw.open(filepath+"gw.txt");
@@ -420,11 +414,12 @@ namespace svo{
                   << newest_kf->kf_id_<<" "
                   << bgest(0)<<" "<<bgest(1)<<" "<<bgest(2)<<" "<<endl;
 
-//            condnum << newest_kf->timestamp_<<" "
-//                    << newest_kf->timestamp_ - StartTime<<" "
-//                    << newest_kf->kf_id_<<" "
-//                    << w2.at<float>(0)<<" "<<w2.at<float>(1)<<" "<<w2.at<float>(2)<<" "<<w2.at<float>(3)<<" "
-//                    << w2.at<float>(4)<<" "<<w2.at<float>(5)<<" "<<endl;
+            condnum << newest_kf->timestamp_<<" "
+                    << newest_kf->timestamp_ - StartTime<<" "
+                    << newest_kf->kf_id_<<" "
+                    << w2.at<float>(0)/w2.at<float>(5)<<" "
+                    << w2.at<float>(0)<<" "<<w2.at<float>(1)<<" "<<w2.at<float>(2)<<" "<<w2.at<float>(3)<<" "
+                    << w2.at<float>(4)<<" "<<w2.at<float>(5)<<" "<<endl;
 
             Rwi <<RWI_(0,0)<<" "<<RWI_(0,1)<<" "<<RWI_(0,2)<<"\n"
                 <<RWI_(1,0)<<" "<<RWI_(1,1)<<" "<<RWI_(1,2)<<"\n"
@@ -448,11 +443,11 @@ namespace svo{
             Vector3d gravity = Converter::toVector3d(GravityVec);
             _vo->setGravityVec(gravity);
 
-//            while (!_vo->getPermission_Update_kf()) {
-//                static int wait_time = 0;
-//                cout << "VioInit complete, waitting for Uptate KF Permission: " << wait_time++ << "\n" << endl;
-//                usleep(1000);
-//            }
+            while (!_vo->getPermission_Update_kf()) {
+                static int wait_time = 0;
+                cout << "VioInit complete, waitting for Uptate KF Permission: " << wait_time++ << "\n" << endl;
+                usleep(1000);
+            }
             _vo->setPermission_ProcessFrame(false); // 初始化位姿更新过程中，不能进行新帧处理
             cout << "setPermission_ProcessFrame(false)初始化位姿更新过程中，不能进行新帧处理" << endl;
 
@@ -561,8 +556,6 @@ namespace svo{
         }
 
         //TODO: add global BA after initialization
-
-
         for(int i=0; i< (int)N ; ++i){
             if(kfInit[i])
                 delete kfInit[i];
@@ -578,7 +571,7 @@ namespace svo{
     }
 
     void KeyFrameInit::ComputePreInt() {
-        if (prev_KeyFrame == NULL) {
+        if (prev_KeyFrame == nullptr) {
             return;
         } else {
             IMUPreInt.reset();// Reset pre-integrator first
@@ -595,15 +588,16 @@ namespace svo{
                 // update pre-integrator
                 IMUPreInt.update(imu._g - bg, imu._a, imu._t);    ///IMUPreInt: from last KF to this KF
 
-//                cout<<"imu._g - bg"<<imu._g - bg<<endl;
-//                cout<<"imu._a"<<imu._a<<endl;
+//                cout<<"imu._g - bg \n"<<imu._g - bg<<endl;
+//                cout<<"imu._a \n"<<imu._a<<endl;
+//                cout<<"dt \n"<<imu._t<<endl;
             }
         }
     }
+    Vector3d VioInitialization::solveGyroscopeBias(const vector<cv::Mat> &Pose_c_w,
+                                                   const vector<svo::IMUPreintegrator> &ImuPreInt,
+                                                   const Matrix4d &T_bc) {
 
-
-    Vector3d VioInitialization::solveGyroscopeBias(const vector<cv::Mat> &Pose_c_w, const vector<IMUPreintegrator> &ImuPreInt,
-                                const Matrix4d T_bc) {
         int N = Pose_c_w.size();
         if (Pose_c_w.size() != ImuPreInt.size()) cerr << "vTwc.size()!=vImuPreInt.size()" << endl;
         Matrix3d Rcb = T_bc.topLeftCorner(3, 3).transpose();
@@ -645,5 +639,4 @@ namespace svo{
 
         return delta_bg;
     }
-
 }

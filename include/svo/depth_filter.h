@@ -24,6 +24,7 @@
 #include <svo/global.h>
 #include <svo/feature_detection.h>
 #include <svo/matcher.h>
+#include <svo/config.h>
 
 namespace svo {
 
@@ -79,7 +80,7 @@ public:
       epi_search_1d(false),
       verbose(false),
       use_photometric_disparity_error(false),
-      max_n_kfs(3), //3
+      max_n_kfs(Config::SeedMaxKF()),                        ///种子的最大关键帧数  3
       sigma_i_sq(5e-4),
       seed_convergence_sigma2_thresh(200.0)
     {}

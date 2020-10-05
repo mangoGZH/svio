@@ -163,6 +163,7 @@ void detectFeatures(
     vector<Vector3d>& f_vec)
 {
   Features new_features;
+
   feature_detection::FastDetector detector(
       frame->img().cols, frame->img().rows, Config::gridSize(), Config::nPyrLevels());
   detector.detect(frame.get(), frame->img_pyr_, Config::triangMinCornerScore(), new_features);
@@ -368,7 +369,7 @@ void computeHomography(
   //std::cout<<"R: "<<R_cf<<std::endl;
   //std::cout<<"t: "<<t_cf<<std::endl;
   std::cout<<R<<std::endl<<t<<std::endl;
-  std::cout<<"T_cur_from_ref: "<<T_cur_from_ref<<std::endl;
+  //std::cout<<"T_cur_from_ref: "<<T_cur_from_ref<<std::endl;
 
   int depth_error(0);
    for(vector<int>::iterator it=inliers.begin(); it!=inliers.end(); ++it)
@@ -447,7 +448,7 @@ void computeHomography(
 
   }
 
-  if(1 == method_choose)
+  if(2 == method_choose)
   {
 #ifdef HOMOGRAPHY
   vector<Vector2d, aligned_allocator<Vector2d> > uv_ref(f_ref.size());
@@ -466,26 +467,9 @@ void computeHomography(
   T_cur_from_ref = Homography.T_c2_from_c1;
 
   std::cout << "======================Homography===============================" << std::endl;
-/*
-  std::ofstream hyj_file;
-  hyj_file.open("H_xyz.txt");
-  if(hyj_file.is_open())
-  {
-      for(vector<int>::iterator it=inliers.begin(); it!=inliers.end(); ++it)
-      {
-          hyj_file<<"id: "<<*it<<"\t"
-                 <<std::fixed
-                  << xyz_in_cur[*it].x() << "\t"
-                  << xyz_in_cur[*it].y() << "\t"
-                  << xyz_in_cur[*it].z() << "\t"
-                  << std::endl;
-      }
-  }
-  hyj_file.close();
-*/
   std::cout<<T_cur_from_ref.rotation_matrix()<<std::endl;
   std::cout<<T_cur_from_ref.translation()<<std::endl;
-  std::cout<<"T_cur_from_ref: "<<T_cur_from_ref<<std::endl;
+  //std::cout<<"T_cur_from_ref: "<<T_cur_from_ref<<std::endl;
   SVO_INFO_STREAM("Init: Homography RANSAC "<<inliers.size()<<" inliers.");
 
 #endif

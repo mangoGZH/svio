@@ -27,7 +27,6 @@ Config::Config() :
     trace_name(vk::getParam<string>("svo/trace_name", "svo")),
     trace_dir(vk::getParam<string>("svo/trace_dir", "/tmp")),
     n_pyr_levels(vk::getParam<int>("svo/n_pyr_levels", 3)),
-    use_imu(vk::getParam<bool>("svo/use_imu", false)),
     core_n_kfs(vk::getParam<int>("svo/core_n_kfs", 3)),
     map_scale(vk::getParam<double>("svo/map_scale", 1.0)),
     grid_size(vk::getParam<int>("svo/grid_size", 30)),
@@ -44,6 +43,7 @@ Config::Config() :
     loba_thresh(vk::getParam<double>("svo/loba_thresh", 2.0)),
     loba_robust_huber_width(vk::getParam<double>("svo/loba_robust_huber_width", 1.0)),
     loba_num_iter(vk::getParam<int>("svo/loba_num_iter", 0)),
+    winba_num_iter(vk::getParam<int>("svo/winba_num_iter", 0)),
     kfselect_mindist(vk::getParam<double>("svo/kfselect_mindist", 0.12)),
     triang_min_corner_score(vk::getParam<double>("svo/triang_min_corner_score", 20.0)),
     triang_half_patch_size(vk::getParam<int>("svo/triang_half_patch_size", 4)),
@@ -57,7 +57,6 @@ Config::Config() :
     trace_name("svo"),
     trace_dir("/tmp"),
     n_pyr_levels(3), //3
-    use_imu(false),
     core_n_kfs(3),
     map_scale(1.0),
     grid_size(25),                    // 75
@@ -74,6 +73,7 @@ Config::Config() :
     loba_thresh(2.0),
     loba_robust_huber_width(1.0),
     loba_num_iter(0),
+    winba_num_iter(0),
     kfselect_mindist(0.12),   // 0.12
     triang_min_corner_score(5.0),   // 20
     triang_half_patch_size(4),
@@ -85,43 +85,28 @@ Config::Config() :
     quality_max_drop_fts(40)
 #endif
     {   ///调参的时候需要注意，参数改变的路经:
-        cv::FileStorage fsConfig("/home/gzh/SVIO_rebuild/svio_1.0/test/config_param.yaml", cv::FileStorage::READ);
+        cv::FileStorage fsConfig("/home/gzh/SVIO_rebuild/svio_1.1/test/config_param.yaml", cv::FileStorage::READ);
         if (!fsConfig.isOpened()) {
             return;
         }
         int data_temp;
-        fsConfig["start_Frame"] >> start_Frame;
-        std::cout << "start_Frame=" << start_Frame << std::endl;
-
-        fsConfig["vio_init_stoptime"] >> vio_init_stoptime;
-        std::cout << "vio_init_stoptime=" << vio_init_stoptime << std::endl;
-
-        fsConfig["vio_init_scale"] >> vio_init_scale;
-        std::cout << "vio_init_scale=" << vio_init_scale << std::endl;
-
-        fsConfig["kf_reproj_cnt"] >> kf_reproj_cnt;
-        std::cout << "kf_reproj_cnt=" << kf_reproj_cnt << std::endl;
-
-        fsConfig["kf_max_pixeldist"] >> kf_max_pixeldist;
-        std::cout << "kf_max_pixeldist" << kf_max_pixeldist << std::endl;
+        fsConfig["start_Frame"] >> start_Frame;                       std::cout << "start_Frame=" << start_Frame << std::endl;
+        fsConfig["vio_init_stoptime"] >> vio_init_stoptime;           std::cout << "vio_init_stoptime=" << vio_init_stoptime << std::endl;
+        fsConfig["vio_init_scale"] >> vio_init_scale;                 std::cout << "vio_init_scale=" << vio_init_scale << std::endl;
+        fsConfig["kf_reproj_cnt"] >> kf_reproj_cnt;                   std::cout << "kf_reproj_cnt=" << kf_reproj_cnt << std::endl;
+        fsConfig["kf_max_pixeldist"] >> kf_max_pixeldist;             std::cout << "kf_max_pixeldist" << kf_max_pixeldist << std::endl;
+        fsConfig["use_imu_prior"] >> use_imu_prior;                   std::cout <<"use_imu_prior="<< use_imu_prior<<std::endl;
+        fsConfig["fixedkf_obs_minftr_num"] >>fixedkf_obs_minftr_num;  std::cout<<"fixedkf_obs_minftr_num="<<fixedkf_obs_minftr_num<<std::endl;
+        fsConfig["Edge_weight_PVRPoint"] >> Edge_weight_PVRPoint;     std::cout<<"Edge_weight_PVRPoint="<<Edge_weight_PVRPoint<<std::endl;
+        fsConfig["seed_max_kf_n"] >> seed_max_kf_n;                   std::cout<<"seed_max_kf_n="<<seed_max_kf_n<<std::endl;
 
 
-        fsConfig["max_n_kfs"] >> data_temp;
-        max_n_kfs = data_temp;
-        std::cout << "max_n_kfs=" << max_n_kfs << std::endl;
-
-        fsConfig["loba_num_iter"] >> data_temp;
-        loba_num_iter = data_temp;
-        std::cout << "loba_num_iter=" << loba_num_iter << std::endl;
-
-        fsConfig["max_fts"] >> data_temp;
-        max_fts = data_temp;
-        std::cout << "max_fts=" << max_fts << std::endl;
-
-        fsConfig["quality_min_fts"] >> data_temp;
-        quality_min_fts = data_temp;
-        std::cout << "quality_min_fts=" << quality_min_fts << std::endl;
-
+        fsConfig["max_n_kfs"] >> data_temp;       max_n_kfs = data_temp;       std::cout << "max_n_kfs=" << max_n_kfs << std::endl;
+        fsConfig["loba_num_iter"] >> data_temp;   loba_num_iter = data_temp;   std::cout << "loba_num_iter=" << loba_num_iter << std::endl;
+        fsConfig["winba_num_iter"] >>data_temp;   winba_num_iter = data_temp;  std::cout<<"winba_num_iter="<<winba_num_iter<<std::endl;
+        fsConfig["max_fts"] >> data_temp;         max_fts = data_temp;         std::cout << "max_fts=" << max_fts << std::endl;
+        fsConfig["quality_min_fts"] >> data_temp; quality_min_fts = data_temp; std::cout << "quality_min_fts=" << quality_min_fts << std::endl;
+        fsConfig["core_n_kfs"] >>data_temp;       core_n_kfs = data_temp;      std::cout<<"core_n_kfs="<<core_n_kfs<<std::endl;
 
     }
 Config& Config::getInstance()

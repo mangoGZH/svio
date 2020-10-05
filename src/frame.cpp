@@ -31,15 +31,21 @@ namespace svo {
 
 int Frame::frame_counter_ = 0;
 
-Frame::Frame(svo::AbstractCamera* cam, const cv::Mat& img, double timestamp) :
+//Frame::Frame(svo::AbstractCamera* cam, const cv::Mat& img, double timestamp) :
+Frame::Frame(svo::PinholeCamera* cam, const cv::Mat& img, double timestamp) :
     id_(frame_counter_++),
     timestamp_(timestamp),
     cam_(cam),
     key_pts_(5),
     is_keyframe_(false),
     have_initializeSeeds(false),
-    v_kf_(NULL),
-    PrevKeyFrame(NULL)
+    v_kf_(nullptr),
+    PrevKeyFrame(nullptr),
+    v_PVR_(nullptr),   //gzh add 2019-9-23
+    v_Bias_(nullptr),
+    is_infixed_kf(false),
+    is_inWindow_(false),
+    winmap_obs_ftr(0)
 {
   initFrame(img);
 }
@@ -197,6 +203,11 @@ void Frame::SetVPose(const cv::Mat &tcw) {
     Ow.copyTo(Twc.rowRange(0, 3).col(3));
 
 }
+///***************window BA part***********
+void Frame::putKFtofixedKF()
+{
+    is_infixed_kf = true;
+}
 
 ///***************imu part*****************
 void Frame::ComputePreInt() {      //ComputePreInt between key frame
@@ -235,6 +246,10 @@ void Frame::SetNavStateVel(const Vector3d &vel) {
 
 void Frame::SetNavStateRot(const Matrix3d &rot) {
     //unique_lock<mutex> lock(mMutexNavState);
+    imuState.Set_Rot(rot);
+}
+
+void Frame::SetNavStateRot(const Sophus::SO3 &rot){
     imuState.Set_Rot(rot);
 }
 
@@ -280,7 +295,7 @@ void Frame::UpdateNavState(const NavState& lastImuState, const IMUPreintegrator&
     Eigen::Vector3d Vwbpre = lastImuState.Get_V();
 
     Eigen::Matrix3d Rwb = Rwbpre * dR;
-    Eigen::Vector3d Pwb = Pwbpre + Vwbpre*dt + 0.5 * gw * dt * dt + Rwbpre*dP;
+    Eigen::Vector3d Pwb = Pwbpre + Vwbpre*dt + 0.5 * gw * dt * dt + Rwbpre * dP;
     Eigen::Vector3d Vwb = Vwbpre + gw * dt + Rwbpre * dV;
 
     // Here assume that the pre-integration is re-computed after bias updated, so the bias term is ignored
@@ -295,7 +310,7 @@ void Frame::UpdateNavState(const NavState& lastImuState, const IMUPreintegrator&
 }
 
 ///use current visual state set the last imustate(Velocity) in every frame.
-void Frame::GetpreVelFromeV( FramePtr curframe, Vector3d gravity, const cv::Mat &Tbc, double scale) {
+void Frame::GetpreVelFromeV( FramePtr curframe, const Vector3d gravity, const cv::Mat &Tbc) {
 
     // Extrinsics
     cv::Mat Rbc = Tbc.rowRange(0, 3).colRange(0, 3);

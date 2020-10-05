@@ -32,6 +32,8 @@ namespace g2o {
 class VertexSE3Expmap;
 }
 typedef g2o::VertexSE3Expmap g2oFrameSE3;
+typedef g2o::VertexNavStatePVR  g2oNavStatePVR;
+typedef g2o::VertexNavStateBias g2oNavStateBias;
 
 namespace svo {
 
@@ -50,11 +52,13 @@ public:
   static int                    frame_counter_;         //!< Counts the number of created frames. Used to set the unique id.
   int                           id_;                    //!< Unique id of the frame.
   int                           kf_id_;                 //!< gzh add
+  int                           window_kf_id_;          //!< gzh add
   double                        timestamp_;             //!< Timestamp of when the image was recorded.
-  svo::AbstractCamera*           cam_;                   //!< Camera model.
+  //svo::AbstractCamera*           cam_;                   //!< Camera model.
+  svo::PinholeCamera*           cam_;                   //!< Camera model.
   Sophus::SE3                   T_f_w_;                 //!< Transform (f)rame from (w)orld.从世界坐标到相机坐标的变换矩阵  Tcw
   Matrix<double, 6, 6>          Cov_;                   //!< Covariance.
-  cv::Mat                       debug_img_;    // used to draw feature in img_pyr_[0]
+  cv::Mat                       debug_img_;             // used to draw feature in img_pyr_[0]
   ImgPyr                        img_pyr_;               //!< Image Pyramid.
   Features                      fts_;                   //!< List of features in the image.
   vector<Feature*>              key_pts_;               //!< Five features and associated 3D points which are used to detect if two frames have overlapping field of view.
@@ -78,7 +82,7 @@ public:
   Frame* GetNextKeyFrame();
 
   ///-------------gzh: add imu part-------------
-  NavState						imuState;
+  NavState						imuState;   // b in w_frame
   IMUPreintegrator				imuPreint;
   IMUPreintegrator				kfimuPreint;
 
@@ -90,6 +94,7 @@ public:
   void SetNavStatePos(const Vector3d &pos);     //p
   void SetNavStateVel(const Vector3d &vel);     //v
   void SetNavStateRot(const Matrix3d &rot);     //R
+  void SetNavStateRot(const Sophus::SO3 &rot);
   void SetNavStateBiasGyr(const Vector3d &bg);  //bg
   void SetNavStateBiasAcc(const Vector3d &ba);  //ba
   void SetNavStateDeltaBg(const Vector3d &dbg); //delta bg
@@ -98,7 +103,7 @@ public:
 
   void UpdateNavState(const NavState& lastImuState, const IMUPreintegrator& imupreint, const Eigen::Vector3d& gw);
 
-  void GetpreVelFromeV( FramePtr curframe, Vector3d gravity, const cv::Mat &Tbc, double scale);
+  void GetpreVelFromeV( FramePtr curframe, const Vector3d gravity, const cv::Mat &Tbc);
   void UpdateNavstateFromV( FramePtr prevframe, Vector3d gravity, const cv::Mat& Tbc);
   Sophus::SE3 UpdatePoseFromNS(const cv::Mat& Tbc);
 
@@ -108,10 +113,19 @@ public:
   void SetVPos(const Vector3d& pos ){ T_f_w_.translation() = pos; }
   ///-------------end---------------------------
 
+  ///-------------gzh: add window BA part-------------
+  g2oNavStatePVR*            v_PVR_;                //gzh add
+  g2oNavStateBias*           v_Bias_;               //gzh add
+  bool                       is_infixed_kf;         //gzh add
+  bool                       is_inWindow_;          //gzh add
+  int                        winmap_obs_ftr;        //the number of featrues,kf can observed (in window maps)
+  /// put this kf to slidingwindow.
+  void putKFtoWindow();            //gzh add 2019-9-3
+  void putKFtofixedKF();           //gzh add 2019-9-6
+    ///-------------end--
 
-
-
-  Frame(svo::AbstractCamera* cam, const cv::Mat& img, double timestamp);
+//  Frame(svo::AbstractCamera* cam, const cv::Mat& img, double timestamp);
+   Frame(svo::PinholeCamera* cam, const cv::Mat& img, double timestamp);
   ~Frame();
 
   /// Initialize new frame and create image pyramid.
@@ -166,6 +180,9 @@ public:
 
   /// Return the pose of the frame in the (w)orld coordinate frame.
   inline Vector3d pos() const { return T_f_w_.inverse().translation(); }
+
+  /// Return the pose of the frame in the (w)orld coordinate frame.//返回世界系下的 rotation
+  inline Matrix3d rot() const { return T_f_w_.inverse().rotation_matrix(); }
 
   /// Frame jacobian for projection of 3D point in (f)rame coordinate to
   /// unit plane coordinates uv (focal length = 1).

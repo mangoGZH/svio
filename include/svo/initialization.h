@@ -50,7 +50,7 @@ protected:
   vector<cv::Point2f> px_prev_;  //  hyj  optical flow tracking frame by frame.
 
   vector<Vector3d> f_ref_;          //!< bearing vectors corresponding to the keypoints in the reference image.
-  vector <Vector3d> fts_type_;   // hyj : save feature type
+  vector <Vector3d> fts_type_;      // hyj : save feature type
   vector<Vector3d> f_cur_;          //!< bearing vectors corresponding to the keypoints in the current image.
   vector<double> disparities_;      //!< disparity between first and second frame.
   vector<int> inliers_;             //!< inliers after the geometric check (e.g., Homography).

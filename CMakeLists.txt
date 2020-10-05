@@ -133,7 +133,7 @@ IF(HAVE_G2O)
 ENDIF(HAVE_G2O)
 
 # Create svo library
-ADD_LIBRARY(svo SHARED ${SOURCEFILES} include/svo/Data_EuRoc.h src/Data_EuRoc.cpp include/svo/Converter.h src/Converter.cpp include/svo/vio_init.h src/vio_init.cpp src/IMU/imudata.cpp src/IMU/IMUPreintegrator.cpp src/IMU/NavState.cpp)
+ADD_LIBRARY(svo SHARED ${SOURCEFILES} include/svo/Data_EuRoc.h src/Data_EuRoc.cpp include/svo/Converter.h src/Converter.cpp include/svo/vio_init.h src/vio_init.cpp src/IMU/imudata.cpp src/IMU/IMUPreintegrator.cpp src/IMU/NavState.cpp src/IMU/g2otypes.cpp)
 TARGET_LINK_LIBRARIES(svo ${LINK_LIBS}   ${Pangolin_LIBRARIES})
 
 ################################################################################

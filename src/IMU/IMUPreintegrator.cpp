@@ -79,8 +79,8 @@ namespace svo
 // incrementally update 1)delta measurements, 2)jacobians, 3)covariance matrix
 // acc: acc_measurement - bias_a, last measurement!! not current measurement
 // omega: gyro_measurement - bias_g, last measurement!! not current measurement
-    void IMUPreintegrator::update(const Vector3d& omega, const Vector3d& acc, const double& dt)
-    {
+    void IMUPreintegrator::update(const Eigen::Vector3d &omega, const Eigen::Vector3d &acc, const double &dt) {
+
         double dt2 = dt*dt;
 
         Matrix3d dR = Expmap(omega*dt);   //SO3::exp( omega*dt ).matrix()

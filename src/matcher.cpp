@@ -60,6 +60,7 @@ void getWarpMatrixAffine(
     const int level_ref,
     Matrix2d& A_cur_ref)
 {
+    //cout<<"getWarpMatrixAffine "<<endl;
   // Compute affine warp matrix A_cur_ref
   const int halfpatch_size = 5;
   const Vector3d xyz_ref(f_ref*depth_ref);

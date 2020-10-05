@@ -20,18 +20,15 @@
 #include <svo/frame.h>
 #include <svo/point.h>
 #include <svo/feature.h>
-#include <svo/map.h>
 #include <svo/config.h>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
-#include <svo/camera_model.h>
 
 namespace svo {
 
-Reprojector::Reprojector(svo::AbstractCamera* cam, Map& map) :
-    map_(map)
-{
-  initializeGrid(cam);
+Reprojector::Reprojector(svo::PinholeCamera* cam, Map& map): map_(map) {
+
+    initializeGrid(cam);
 }
 
 Reprojector::~Reprojector()
@@ -39,7 +36,7 @@ Reprojector::~Reprojector()
   std::for_each(grid_.cells.begin(), grid_.cells.end(), [&](Cell* c){ delete c; });
 }
 
-void Reprojector::initializeGrid(svo::AbstractCamera* cam)
+void Reprojector::initializeGrid(svo::PinholeCamera* cam)
 {
   grid_.cell_size = Config::gridSize();
   grid_.grid_n_cols = ceil(static_cast<double>(cam->width())/grid_.cell_size);

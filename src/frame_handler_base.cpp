@@ -55,6 +55,7 @@ FrameHandlerBase::FrameHandlerBase() :
   g_permon->addTimer("pose_optimizer");
   g_permon->addTimer("point_optimizer");
   g_permon->addTimer("local_ba");
+  g_permon->addTimer("window_ba");//gzh add 2019-9-6
   g_permon->addTimer("tot_time");
   g_permon->addLog("timestamp");
   g_permon->addLog("img_align_n_tracked");
@@ -68,6 +69,12 @@ FrameHandlerBase::FrameHandlerBase() :
   g_permon->addLog("loba_n_erredges_fin");
   g_permon->addLog("loba_err_init");
   g_permon->addLog("loba_err_fin");
+  g_permon->addLog("loba_time");
+  g_permon->addLog("winba_n_erredges_init");
+  g_permon->addLog("winba_n_erredges_fin");
+  g_permon->addLog("winba_err_init");
+  g_permon->addLog("winba_err_fin");
+  g_permon->addLog("winba_time");
   g_permon->addLog("n_candidates");
   g_permon->addLog("dropout");
   g_permon->init(Config::traceName(), Config::traceDir());
@@ -110,11 +117,15 @@ int FrameHandlerBase::finishFrameProcessingCommon(
     const UpdateResult dropout,
     const size_t num_observations)
 {
+//    //gzh fixed 2019-11-29  <change the time compute method>
+//    finish_time = clock();
+//    totaltime = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
   SVO_DEBUG_STREAM("Frame: "<<update_id<<"\t fps-avg = "<< 1.0/acc_frame_timings_.getMean()<<"\t nObs = "<<acc_num_obs_.getMean());
   SVO_LOG(dropout);
 
   // save processing time to calculate fps
   acc_frame_timings_.push_back(timer_.stop());
+
   if(stage_ == STAGE_DEFAULT_FRAME)
     acc_num_obs_.push_back(num_observations);
   num_obs_last_ = num_observations;
@@ -165,7 +176,7 @@ void FrameHandlerBase::setTrackingQuality(const size_t num_observations,const si
 
   //const int feature_drop = static_cast<int>(std::min(num_obs_last_, Config::maxFts())) - num_observations;
   //if(feature_drop > Config::qualityMaxFtsDrop())
-  const float feature_drop = (float)(init_match_number - num_observations);
+  auto feature_drop = (float)(init_match_number - num_observations);
   if(feature_drop/init_match_number > 0.6)
   {
     //SVO_WARN_STREAM("outliter during pose  "<< feature_drop <<" features!");

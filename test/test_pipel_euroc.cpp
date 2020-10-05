@@ -85,13 +85,16 @@ namespace svo {
 
     void OutPutFile( svo::FrameHandlerMono *vo_, EuRocData* dataset, int img_id ){
 
+#ifdef USE_IMU
+        if (!vo_->vioInitFinish)return;
+#endif
         // show tracking quality
         if (vo_->lastFrame() != NULL) {
             std::cout << "Frame-Id: " << vo_->lastFrame()->id_ << " \t"
                       << "#Features: " << vo_->lastNumObservations() << " \n";
 
             // access the pose of the camera via vo_->lastFrame()->T_f_w_.
-            std::cout << "Frame pose: " << vo_->lastFrame()->T_f_w_ << std::endl;
+//            std::cout << "Frame pose: " << vo_->lastFrame()->T_f_w_ << std::endl;
 
             Eigen::Vector3d Pos_W;//position in world frame
             Pos_W = vo_->lastFrame()->T_f_w_.inverse().translation();
@@ -119,9 +122,10 @@ namespace svo {
     class BenchmarkNode {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         EuRocData *dataset;
-        svo::AbstractCamera *cam_;
-        svo::AbstractCamera *cam_r_;
-        svo::PinholeCamera *cam_pinhole_;  //　PinholeCamera：针孔相机模型　继承了AbstractCamera
+//        svo::AbstractCamera *cam_;
+//        svo::AbstractCamera *cam_r_;
+//        svo::PinholeCamera *cam_pinhole_;  //　PinholeCamera：针孔相机模型　继承了AbstractCamera
+        svo::PinholeCamera *cam_;  //gzh change
         svo::FrameHandlerMono *vo_;
 
         SLAM_VIEWER::Viewer *viewer_;
@@ -148,10 +152,10 @@ namespace svo {
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V1_02_medium/mav0");
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V2_01_easy/mav0");
 
-        cam_ = new svo::PinholeCamera(752, 480, 435.2046959714599, 435.2046959714599, 367.4517211914062,
-                                      252.2008514404297);
-        cam_r_ = new svo::PinholeCamera(752, 480, 435.2046959714599, 435.2046959714599, 367.4517211914062,
-                                        252.2008514404297);
+        cam_ = new svo::PinholeCamera(752, 480,
+                435.2046959714599, 435.2046959714599,
+                367.4517211914062,252.2008514404297);  //使用EuRoc,yaml中的parameter
+       // cam_ = new svo::PinholeCamera(752, 480, 458.654, 457.296, 367.215, 248.375);//from sensor.yaml
 
         //vo_ = new svo::FrameHandlerMono(cam_);
         vo_ = new svo::FrameHandlerMono(cam_, dataset);
@@ -180,8 +184,8 @@ namespace svo {
     BenchmarkNode::~BenchmarkNode() {
         delete vo_;
         delete cam_;
-        delete cam_r_;
-        delete cam_pinhole_;
+//        delete cam_r_;
+//        delete cam_pinhole_;
 
         delete viewer_;
         delete viewer_thread_;
@@ -205,6 +209,7 @@ namespace svo {
 
             // 3.图像处理与跟踪定位
             vo_->addImage(img_left, GetRealTime( dataset->img_timestamps[0][img_id] )); //改了一下timestamp
+            vo_->set_Image_id(img_id);
 
             // 4.位姿结果输出
             OutPutFile( vo_, dataset, img_id);

@@ -13,7 +13,7 @@
 
   svo_0.1   20-4-15
     ～　将test_piple_euroc.cpp 中的　数据读取＆输入输出模块化　
-　　～　增加了：　Data_EuRoc.cpp/.h文件：  构造类EuRocData *dataset，用于数据文件的储存
+　　～　增加了：　Data_EuRoc.cpp/.h文件： 构造类EuRocData *dataset，用于数据文件的储存
 　　～　增加了：　文件/config_param.yaml：用于对参数调试的修改　
 　　　　　　　　　　　　　　　　(注意：参数改变的路经--->home/gzh/SVIO_rebuild/svo_0 .1/test/config_param.yaml)
 
@@ -32,16 +32,16 @@
 　　～　在processframe()中添加:addImu(),对相邻两帧之间对 imu_data 进行预积分计算 imuPreint.update(imu._g - bg, imu._a - ba, imu._t);
 　　～　由于外部拷贝的文件会出现无法使用的情况，对src/IMU/中的几个.cpp文件重新拷贝
 　　～　设置初始化模块与运动跟踪模块之间的交互关系：
-                      1)初始化算法：在关键帧到来时刻进行联合初始化运算，因此初始化模块需要等待　帧处理流程中的read_kf_permisiion
-                        帧处理过程中：当确定了新的关键帧后，需要将关键帧添加到map和depthfilter中，在此期间不能进行联合初始化计算
-　　　　　　　　　　　　　因此在 addKeyframe to map 和depthfilterset之前需要 set Permission_Read_kf(false)
-                               add完成之后　set Permission_Read_kf(true)
-                      2)当达到联合初始化收敛条件时，需要对所有　每帧图像位姿/kf位姿/地图点位置/scale/IMU参数　进行更新
-　　　　　　　　　　　　　在该过程中，不能进行图像帧处理
-　　　　　　　　　　　　　图像帧处理　processFrame()的入口处需要获得　processframe_permission才能继续处理图像,　否则　需要等待
-　　　　　　　　　　　　　因此　vio_init在位姿更新前需要，set　Permission_ProcessFrame(false);
-　　　　　　　　　　　　　　　　　　　　　                   位姿更新完之后，set　Permission_ProcessFrame(true);
-　　　　　　　　　　　　　　　　　　　　　　3)还有一个　permission_update_kf_　有待观测，感觉好像没什么用？？？？？？？？？　暂时先注释掉了
+            1)初始化算法：在关键帧到来时刻进行联合初始化运算，因此初始化模块需要等待　帧处理流程中的read_kf_permisiion
+                 帧处理过程中：当确定了新的关键帧后，需要将关键帧添加到map和depthfilter中，在此期间不能进行联合初始化计算
+　　　　　　　　　因此在 addKeyframe to map 和depthfilterset之前需要 set Permission_Read_kf(false)
+                 add完成之后　set Permission_Read_kf(true)
+             2)当达到联合初始化收敛条件时，需要对所有　每帧图像位姿/kf位姿/地图点位置/scale/IMU参数　进行更新
+　　　　　　　　　在该过程中，不能进行图像帧处理
+　　　　　　　　　图像帧处理　processFrame()的入口处需要获得　processframe_permission才能继续处理图像,　否则　需要等待
+　　　　　　　　　因此　vio_init在位姿更新前需要，set　Permission_ProcessFrame(false);
+　　　　　　　　　　　　　　　　　　　　　          位姿更新完之后，set　Permission_ProcessFrame(true);
+　　　　　　　　　　　　　3)还有一个　permission_update_kf_　有待观测，感觉好像没什么用？？？？？？？？？　暂时先注释掉了
 　
 　　～　设置　联合初始化估计终止条件　　（TryVioInit 中）
 　　～　联合初始化估计达到终止条件后更新　IMU：imuState(pos)/(vel)/(rot) 以及惯性参数 ba/bg/gw
@@ -55,9 +55,63 @@
                                  / 0.075047
                  Scale correction: 1.0116433573943742
 　　　　****精度  不校正尺度　　 　rmse: 0.089872
-　　　　　　　
-//以上完成将ｉｍｕ传感器数据的添加，预积分模块，视觉惯性联合初始化部分的代码．代码量约1000．
-　　　　　　　
+//以上完成将ｉｍｕ传感器数据的添加，预积分模块，视觉惯性联合初始化部分的代码．代码量约1000．***********************************************
+
+　　　　　　
+  svio_1.1   20-6-3
+　　～ 使用imu加权的先验估计，提供视觉位姿估计的初始值（在imu完成初始化，预积分可用的基础上）
+      1) 获得groundtruth真实的p和q: getTruthTranslation(int id)/  getTrueQuaternion(int id) 
+　　　　　　　　　　在进行对比的过程中，由于groundtruth起始位姿的数值不为零，所以还要读取起始帧groundtruth的姿态
+　　　　　　　　　　         groundtruth，将其转换到ｂ系上进行计算
+　　　　　 　groundtruth采用的是增量的真实值（相邻两帧之间真实的位移），由于groundtruth数据已经与imu坐标系重合
+　　　    所以先乘以上一帧的groundtruth旋转的逆，将位移增量转移到上一帧的groundtruth坐标系下，得到相对上一帧的位移增量delta_translation_
+　　   　再叠加到ｃ或ｂ系上，最终通过坐标系变换的方式转换到ｗ系上
+      　　　　　　　　　　　　　**********　警告：该部分内容为重新修改，旧程序发现公式性错误(其实也没大错，可以使用，但是以下计算方法更正确)　****
+　　　｛  采用了两种获取priorPos_truth的方法，
+　　　　　　　　　　　　　　　  (1) priorPos_w_c = priorPos_w_b + cur_rot_w_b * p_b_c
+　　　　　　　　　　　　　　　　　   priorPos_truth_w:使用当前与上一帧间的真值旋转量　位移增量加到ｂ,再加上ｂｃ之间的位移，得到ｃ相对于世界系的位置
+                (2) priorPos_truth_c:未使用真值旋转量 位移增量加到ｃ系再转到世界系
+　　　　　　　　　　　　　　　　　//经对比发现，经过ｂ系再转到ｗ系的真实位置会更准，即：priorPos_truth_w　，得到的error1会更小一点　　｝
+　　　　　　2) 测试几种运动先验模型的误差
+　　　　　
+　　　　　　　先验误差有点奇怪(静止模型居然比ｉｍｕ和匀速的都要好，不科学)？？？？   
+　　　　　　　　　-----！！！！找到问题了：真值计算有误！！！！
+　　　　　　　读取真值的旋转时输入四元数的顺序有误
+　　　　　　　［Eigen中quaternion的构造函数为Quaternion (const Scalar &w, const Scalar &x, const Scalar &y, const Scalar &z)］
+　　　　　　　！所以应改为：groundtruth_pair_q.second = Quaterniond(q_coefficient[0],q_coefficient[1],q_coefficient[2],q_coefficient[3]) ;
+　　　　　　　　　-----！！！
+　　　　　　　改变了匀速运动模型的计算方法：Vector3d priorPos_unifor  = last_frame_->pos() + last_frame_delta_p;
+　　　　　先验对比：
+　　　　　　　　静止模型先验\　imu预积分先验\ 匀速运动先验\ 先验真实值
+
+      3)采用权重先验　
+　　　　　　　　采用之前论文里的加权先验，得到的结果不如匀速模型来的好
+　　　　　          ****** 试试能否采用一些新的方法去改进先验值?　　　待完成..........
+
+　　～ 添加ＢＡ代码部分
+　　　     　bundle adjustment中添加window BA代码:　将储存滑动窗口kf的vector改为了list,去头加尾更省时
+              （尝试将scale 也加入待优化变量中）待完成.....
+　　　      　frame_handle中添加 margin 代码                                       待完成..........
+
+　　～ 发现ＢＡ中，有两个误差边的类型无法使用，原因由于外部拷贝的文件会出现无法使用的情况，对src/IMU/g2otypes文件重新拷贝
+　　　　注：外部直接移过来的.cpp文件在cmakelist中不会进行编译，而自己新建一个.cpp文件时，clion会自动将其加入cmakelist中，
+　　　　而.h文件则可以直接使用不受影响
+ 　
+　2020-9-30
+（１）运动跟踪改动：　527行
+　　　新跟踪的特征点投影到３Ｄ中，再投影回关键帧上进行匹配，有时会因为观测值较少，深度没有收敛，与环境投影匹配阶段会丢失很多特征点，造成重投影失败，运动跟踪重定位失败的结果．
+新增策略：　若当前帧跟踪的特征点数比上一帧跟踪的特征点数少５０．使用之前ＩＭＵ的预积分值赋值给位姿估计
+注释了：
+　　　　　　　if(repr_n_new_references < Config::qualityMinFts())
+　　　　　　　if(tracking_quality_ == TRACKING_INSUFFICIENT)
+　　　　这两处的判断都是将位姿置为上一时刻的位姿，造成频繁的重定位失败
+改动结果：特征匹配点减少超过５０，使用ＩＭＵ接管位姿的估计，之后还会进行一步［pose optimization T_new］
+　　　　　在不考虑尺度误差的情况下，ＭＨ＿０３数据集结果：
+　　　　　　　　　　　
+　　　　　　　　　　　Scale correction: 0.7854941823361009/0.7854941823361009/0.8632369596600875
+
+　　　　　　　　　　　rmse	0.088956/0.205341/0.127657
+
 
 
 

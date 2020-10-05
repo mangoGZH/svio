@@ -68,6 +68,31 @@ void localBA(
     double& init_error,
     double& final_error);
 
+/// Window bundle adjustment
+/// Optimizes window_kfs pose imu (P,V,R) and imu bias
+/// and fixed the common-view kfs as constraints
+void windowBA(
+        Frame *cur_kf,
+        vector <FramePtr> *window_kfs,
+        Map *map,
+        Vector3d gw,
+        Matrix4d Tbc,
+        size_t &n_incorrect_edges_1,
+        size_t &n_incorrect_edges_2,
+        double &init_error,
+        double &final_error);
+
+void windowBA(
+        Frame *cur_kf,
+        list <FramePtr> *win_kfs,
+        Map *map,
+        Vector3d gw,
+        Matrix4d Tbc,
+        size_t &n_incorrect_edges_1,
+        size_t &n_incorrect_edges_2,
+        double &init_error,
+        double &final_error);
+
 /// Global bundle adjustment.
 /// Optimizes the whole map. Is currently not used in SVO.
 void globalBA(Map* map);

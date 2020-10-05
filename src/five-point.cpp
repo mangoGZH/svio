@@ -114,7 +114,6 @@ cv::Mat findEssentialMat( cv::InputArray _points1, cv::InputArray _points2, doub
       cv::Mat(tempMask).copyTo(mask);
     }
 
-
   return E;
 
 }
@@ -382,7 +381,6 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
     }
 
     return count;
-
 }
 
 // Same as the runKernel (run5Point), m1 and m2 should be

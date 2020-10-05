@@ -37,7 +37,9 @@ class FrameHandlerMono : public FrameHandlerBase
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  FrameHandlerMono(svo::AbstractCamera* cam ,EuRocData *dataset);
+//  FrameHandlerMono(svo::AbstractCamera* cam ,EuRocData *dataset);
+  FrameHandlerMono(svo::PinholeCamera* cam, EuRocData *dadaset);
+
   virtual ~FrameHandlerMono();
 
   void Debug_show_img();   // used to debug reproject point
@@ -74,11 +76,11 @@ public:
 
   ///-------------gzh: add imu part------------------
   void addImu(const IMUData& imu);
-
   ///-end--
 
   ///-------------gzh: add vio_init part-------------
   bool vioInitFinish;
+  bool imu_update_flag;  // imuState.p.v.R (updated by vision after initialization )can be used to compute prior
   bool getPermission_Read_kf() { return permission_read_kf_;}
   bool getPermission_Update_kf(){ return permission_update_kf_;}
   bool getPermission_ProcessFrame(){ return permission_Process_frame_;}
@@ -92,13 +94,39 @@ public:
 
   void setMapScale(double scale) {if(scale > 0) map_scale_ = scale;}  //用不着这个
   double getMapScale(){ return map_scale_; }
+  ///-end--
+
+  ///-------------gzh: add imu_prior part-------------
+  double priorcount;
+  double priorImuWight;
+  Vector3d priorImuPos;
+  Eigen::Matrix3d priorImuRot;
+  Vector3d last_frame_delta_p ;
+
+  double imu_wight_pos_error_sum_;
+  double imu_pos_error_sum_;
+  double static_pos_error_sum_;
+  double uniform_pos_error_sum_;
+
+  int image_id;
+
+  void set_Image_id(int id){ image_id = id;}
+  int  get_Image_id(){ return image_id;}
+  ///-end--
+  ///-------------gzh: add window BA part-------------
+  size_t window_size = 10;
+  list<FramePtr> win_kfs;
+//  int kf_cnt;
+//  vector<FramePtr> window_kfs;
+//  int window_kf_id = 0;
+
+  void slideWindow();
 
   ///-end--
 
-
 protected:
-  svo::AbstractCamera* cam_;                     //!< Camera model, can be ATAN, Pinhole or Ocam (see vikit).
-  //svo::PinholeCamera* cam_;
+  //svo::AbstractCamera* cam_;                     //!< Camera model, can be ATAN, Pinhole or Ocam (see vikit).
+  svo::PinholeCamera* cam_;
   Reprojector reprojector_;                     //!< Projects points from other keyframes into the current frame
   FramePtr new_frame_;                          //!< Current frame.
   FramePtr last_frame_;                         //!< Last frame, not necessarily a keyframe.
@@ -118,12 +146,10 @@ protected:
       NEW_FRAME,
       LAST_FRAME
   };
-
   IMU_STATE imu_state_;
   IMUPreintegrator imuPreint;
   std::vector<IMUData> m_IMUData;    // gzh :imudata  (t is delta t)
   ///-end--
-
 
   ///-------------gzh: add vio_init part-------------
   bool permission_read_kf_;

@@ -40,8 +40,8 @@ namespace  svo{
         double TimeStamp;
 
         KeyFrameInit(Frame& kf):
-            prev_KeyFrame( NULL), IMUPreInt( kf.kfimuPreint),
-            kfIMUData( kf.Get_kfIMUData()), bg(0,0,0) ,TimeStamp( kf.timestamp_){}
+            prev_KeyFrame(nullptr), IMUPreInt( kf.kfimuPreint),
+            kfIMUData( kf.Get_kfIMUData()), bg(0,0,0) ,TimeStamp( kf.timestamp_){ }
 
         //ComputePreInt between last KF and current KF
         void ComputePreInt();
@@ -58,8 +58,9 @@ namespace  svo{
 
         void Record_file();
         //Vector3d OptimizeInitialGyroBias(const vector<cv::Mat>& vTwc, const vector<IMUPreintegrator>& vImuPreInt);
-        Vector3d solveGyroscopeBias(const vector<cv::Mat> &Pose_c_w, const vector<IMUPreintegrator> &ImuPreInt,
-                                    const Matrix4d T_bc);
+        Vector3d solveGyroscopeBias(const vector<cv::Mat> &Pose_c_w,
+                                    const vector<IMUPreintegrator> &ImuPreInt,
+                                    const Matrix4d &T_bc);
 
     private:
 

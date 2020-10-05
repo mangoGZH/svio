@@ -133,7 +133,7 @@ void EuRocData::readGroundTruth() {
     pair<string, Eigen::Vector3d> groundtruth_last_p;
     pair<string, Eigen::Quaterniond> groundtruth_last_q;
 
-    string groundtruth_= mav_filedir + "/" + "state_groundtruth_estimate0" + "/";   /// groundtruth_==路经/ state_groundtruth_estimate0/
+    string groundtruth_= mav_filedir + "/" + "state_groundtruth_estimate0" + "/";   // groundtruth_==路经(.../mav0)/ state_groundtruth_estimate0/
     ifstream groundtruth_file(groundtruth_ + data_csv);
 
     if (!groundtruth_file.good())
@@ -146,8 +146,8 @@ void EuRocData::readGroundTruth() {
     while (getline(groundtruth_file, cur_line, ',')){
         if (cur_line == "") break;
         num_of_groundtruth++;
-        groundtruth_pair_p.first = cur_line;
-        groundtruth_pair_q.first = cur_line;
+        groundtruth_pair_p.first = cur_line;   //get timestamps
+        groundtruth_pair_q.first = cur_line;   //get timestamps
         for (int i = 0; i < 3; i++)
         {
             getline(groundtruth_file, cur_line, ',');
@@ -158,7 +158,8 @@ void EuRocData::readGroundTruth() {
             getline(groundtruth_file, cur_line, ',');
             q_coefficient.push_back(stod(cur_line));
         }
-        groundtruth_pair_q.second = Quaterniond(q_coefficient[1],q_coefficient[2],q_coefficient[3],q_coefficient[0]) ; //save as Quaterniond(x,y,z,w)
+        //save as Quaterniond(w,x,y,z)
+        groundtruth_pair_q.second = Quaterniond(q_coefficient[0],q_coefficient[1],q_coefficient[2],q_coefficient[3]) ;
         q_coefficient.clear();
 
         for (int i = 0; i < 8; i++)

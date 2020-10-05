@@ -42,9 +42,6 @@ public:
   /// Number of pyramid levels used for features.
   static size_t& nPyrLevels() { return getInstance().n_pyr_levels; }
 
-  /// Use the IMU to get relative rotations.
-  static bool& useImu() { return getInstance().use_imu; }
-
   /// Number of keyframes in the core. The core-kfs are optimized through bundle adjustment.
   static size_t& coreNKfs() { return getInstance().core_n_kfs; }
 
@@ -93,6 +90,9 @@ public:
   /// Number of iterations in the local bundle adjustment.
   static size_t& lobaNumIter() { return getInstance().loba_num_iter; }
 
+  /// Number of iterations in the window bundle adjustment.
+  static size_t& winbaNumIter() { return getInstance().winba_num_iter; }
+
   /// Minimum distance between two keyframes. Relative to the average height in the map.
   static double& kfSelectMinDist() { return getInstance().kfselect_mindist; }
 
@@ -122,9 +122,14 @@ public:
   static double StartFrame(){return getInstance().start_Frame; }
   static double VIOStopTime(){return getInstance().vio_init_stoptime; }
   static bool   VIOScale(){return getInstance().vio_init_scale; }
-
   static int    KFReprojCNT(){return getInstance().kf_reproj_cnt; }
   static double KFMaxPixelDist(){return getInstance().kf_max_pixeldist; }
+  static bool   UseImuPrior(){return getInstance().use_imu_prior; }
+  static int FixedKFMinFtrNum() { return getInstance().fixedkf_obs_minftr_num; }    //gzh add
+  static double Edgeweight_PVRPoint(){return getInstance().Edge_weight_PVRPoint; }
+  static int    SeedMaxKF(){return getInstance().seed_max_kf_n;}
+  //  /// Use the IMU to get relative rotations.
+//  static bool& useImu() { return getInstance().use_imu; }
 
 private:
   Config();
@@ -133,7 +138,6 @@ private:
   string trace_name;
   string trace_dir;
   size_t n_pyr_levels;
-  bool use_imu;
   size_t core_n_kfs;
   double map_scale;
   size_t grid_size;
@@ -150,6 +154,7 @@ private:
   double loba_thresh;
   double loba_robust_huber_width;
   size_t loba_num_iter;
+  size_t winba_num_iter;         //gzh add
   double kfselect_mindist;
   double triang_min_corner_score;
   size_t triang_half_patch_size;
@@ -167,6 +172,13 @@ private:
 
   int kf_reproj_cnt;
   double kf_max_pixeldist;
+
+  bool use_imu_prior;
+
+  int fixedkf_obs_minftr_num;
+  double Edge_weight_PVRPoint;
+  int seed_max_kf_n;
+
 };
 
 } // namespace svo

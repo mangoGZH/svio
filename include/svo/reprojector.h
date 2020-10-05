@@ -19,9 +19,13 @@
 
 #include <svo/global.h>
 #include <svo/matcher.h>
+#include "camera_model.h"
+#include <svo/config.h>
+#include <svo/map.h>
 
 namespace svo {
 class AbstractCamera;
+class PinholeCamera;
 }
 
 namespace svo {
@@ -52,7 +56,8 @@ public:
   size_t n_matches_;
   size_t n_trials_;
 
-  Reprojector(svo::AbstractCamera* cam, Map& map);
+//  Reprojector(svo::AbstractCamera* cam, Map& map);
+    Reprojector(svo::PinholeCamera* cam, Map& map);
 
   ~Reprojector();
 
@@ -90,7 +95,8 @@ private:
   Map& map_;
 
   static bool pointQualityComparator(Candidate& lhs, Candidate& rhs);
-  void initializeGrid(svo::AbstractCamera* cam);
+//  void initializeGrid(svo::AbstractCamera* cam);
+  void initializeGrid(svo::PinholeCamera* cam);
   void resetGrid();
   bool reprojectCell(Cell& cell, FramePtr frame);
   bool reprojectPoint(FramePtr frame, Point* point);
