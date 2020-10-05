@@ -1,0 +1,23 @@
+%YAML:1.0
+
+# 调参的时候需要注意，参数改变的路经--->home/gzh/SVIO_rebuild/svo版本号/test/config_param.yaml
+
+# start frame id
+start_Frame: 0 #20 30 40 60 90 1000 1100 1200 1500 1600
+
+#VIO initialization parameter
+vio_init_stoptime: 15
+vio_init_scale: 1    # false  true
+
+# kf select
+kf_reproj_cnt: 50    # threshould:if (cnt > N) break; 上一关键帧的特征点投影到当前帧下的个数
+kf_max_pixeldist: 30 # threshould:30 is a stable param  (d > max_pixel_dist )同一地图点在上一关键帧与当前帧投影的像素距离
+
+max_n_kfs: 1000
+
+# BA
+loba_num_iter: 10
+
+# features quality adjust
+max_fts: 180           # reprojectCell-n_matches     map points match to cur_frame
+quality_min_fts: 50
