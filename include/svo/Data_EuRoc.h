@@ -43,7 +43,7 @@ struct CameraParam
 class EuRocData{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    EuRocData(string dir, int cams=1, int imus=1);
+    EuRocData(string dir, int cams=2, int imus=1);
     void readImgsAndParams();
 
     void readImusAndParams();
@@ -62,8 +62,8 @@ private:
     int imu_num;         //imu 文件个数
 
 public:
-    vector<string> cam_data_files;         //保存图像文件路经：cam_data_file　保存：数据集路经/cam0/data/
-    vector<vector<string>> img_timestamps; //cam_vec 每个图像的时间戳
+    vector<vector<string>> cam_data_files;         //保存图像文件路经：cam_data_file　保存：数据集路经/cam0/data/
+    vector<vector<string>> img_timestamps;         //cam_vec 每个图像的时间戳
 
     vector< vector< pair<string,Matrix<double, 6, 1>>>> imu_time_wa; //保存每组imu数据的 (时间戳 ,６＊１的 (w & a) )
 

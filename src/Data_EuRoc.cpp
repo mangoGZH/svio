@@ -19,14 +19,23 @@ EuRocData::EuRocData(string dir, int cams, int imus) :    // EuRocData 初始化
 }
 
 void EuRocData::readImgsAndParams() {
-cout<<"readImgsAndParams"<<endl;
+
+    cout<<"readImgsAndParams"<<endl;
+
     for(int i=0; i<cam_num; ++i){
+        //cout<< "cam_num: " << i <<endl;
+
         vector<string> cam_vec;
+        vector<string> data_file_temp;
+
         string cam_= mav_filedir + "/"+ "cam"+ to_string(i)+ "/";  ///  数据集路经/ cam0/
-        ifstream cam_file(cam_ +data_csv);           ///读取图像时间戳：cam_file ->数据集路经/cam0/data_csv
+        ifstream cam_file(cam_ + data_csv);           ///读取图像时间戳：cam_file ->数据集路经/cam0/data_csv
+        //cout<< "cam_file is: " <<cam_<<endl;
 
         string cam_data_file = cam_ + "data/";       ///保存图像文件路经：cam_data_file　保存：数据集路经/cam0/data/
-        cam_data_files.push_back(cam_data_file);
+        data_file_temp.push_back(cam_data_file);
+        cam_data_files.push_back(data_file_temp);
+        //cout<< "cam_data_file is: " << cam_data_file <<endl;
 
         if (!cam_file.good())
             cerr << "cam" << i << " csv file not found !" << endl;
@@ -37,7 +46,7 @@ cout<<"readImgsAndParams"<<endl;
         while(getline(cam_file, cur_line, ',')){   //遇到' ,'　停止读入
             if(cur_line == "") break;
             num_of_imgs++;
-            cam_vec.push_back(cur_line);   ///cam_vec== 每个图像的时间戳
+            cam_vec.push_back(cur_line);         //cam_vec== 每个图像的时间戳
             getline(cam_file,cur_line);
         }
 
@@ -69,7 +78,9 @@ cout<<"readImgsAndParams"<<endl;
 
         cam_params.push_back(cp);
     }
+
 }
+
 void EuRocData::readImusAndParams() {
 
     for(int i = 0; i < imu_num; ++i ){

@@ -125,7 +125,7 @@ namespace svo {
 //        svo::AbstractCamera *cam_;
 //        svo::AbstractCamera *cam_r_;
 //        svo::PinholeCamera *cam_pinhole_;  //　PinholeCamera：针孔相机模型　继承了AbstractCamera
-        svo::PinholeCamera *cam_;  //gzh change
+        svo::PinholeCamera *cam_;            //gzh change
         svo::FrameHandlerMono *vo_;
 
         SLAM_VIEWER::Viewer *viewer_;
@@ -146,7 +146,7 @@ namespace svo {
 
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/mav0");
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/MH_02_easy/mav0");
-        dataset = new EuRocData("/home/gzh/datasets/EuRoc/MH_03_medium/mav0");
+        dataset = new EuRocData("/home/gzh/datasets/EuRoc/MH_03_medium/mav0", 2, 1);
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/MH_04_difficult/mav0");
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V1_01_easy/mav0");
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V1_02_medium/mav0");
@@ -200,12 +200,21 @@ namespace svo {
 
             // 1.读取左图像数据
             std::stringstream ss;  //ss左图像路经：　数据集路经/cam0/data/timestamps.png
-            ss << dataset->cam_data_files[0] << dataset->img_timestamps[0][img_id] << ".png";
+            ss << dataset->cam_data_files[0][0] << dataset->img_timestamps[0][img_id] << ".png";
+//            cout<< "读取左图像数据:" << dataset->cam_data_files[0][0]<<endl;
             cv::Mat img_left(cv::imread(ss.str().c_str(), CV_LOAD_IMAGE_UNCHANGED));
             assert(!img_left.empty());
 
-            // 2.左圖像畸变矫正
+            // 读取右图像数据
+            std::stringstream ssr;  //ss左图像路经：　数据集路经/cam0/data/timestamps.png
+            ssr << dataset->cam_data_files[1][0] << dataset->img_timestamps[0][img_id] << ".png";
+//            cout<< "读取右图像数据:" << dataset->img_timestamps[1][img_id]<<endl;
+            cv::Mat img_right(cv::imread(ssr.str().c_str(), CV_LOAD_IMAGE_UNCHANGED));
+            assert(!img_right.empty());
+
+            // 2.圖像畸变矫正
             DistortImg(img_left);
+            DistortImg(img_right);
 
             // 3.图像处理与跟踪定位
             vo_->addImage(img_left, GetRealTime( dataset->img_timestamps[0][img_id] )); //改了一下timestamp
