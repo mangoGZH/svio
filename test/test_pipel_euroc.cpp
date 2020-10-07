@@ -36,10 +36,11 @@
 using namespace cv;
 namespace svo {
 
-    void DistortImg( cv::Mat &imgleft ){
+    void DistortImg( cv::Mat &img, bool flag){
 
         //  通过cv::FileStorage fsSetting()传入配置文件路径的读取 校正参数 (Read rectification parameters)
-        cv::FileStorage fsSettings("/home/gzh/datasets/EuRoc/mav0/cam0/EuRoC.yaml", cv::FileStorage::READ);
+        //cv::FileStorage fsSettings("/home/gzh/datasets/EuRoc/mav0/cam0/EuRoC.yaml", cv::FileStorage::READ);
+        cv::FileStorage fsSettings("/home/gzh/datasets/EuRoc/stereo_EuRoC.yaml",cv::FileStorage::READ);
         if (!fsSettings.isOpened()) {
             //cerr << "ERROR: Wrong path to settings" << endl;
             return;
@@ -65,16 +66,24 @@ namespace svo {
 
         if (K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() || R_l.empty() || R_r.empty() || D_l.empty() ||
             D_r.empty() || rows_l == 0 || rows_r == 0 || cols_l == 0 || cols_r == 0) {
-            //cerr << "ERROR: Calibration parameters to rectify stereo are missing!" << endl;
+            cerr << "ERROR: Calibration parameters to rectify stereo are missing!" << endl;
             return;
         }
 
-        //仅使用左相机图像　－－校正
         cv::Mat M1l, M2l, M1r, M2r;
-        cv::initUndistortRectifyMap(K_l, D_l, R_l, P_l.rowRange(0, 3).colRange(0, 3), cv::Size(cols_l, rows_l), CV_32F,
-                                    M1l, M2l);
-                // input,  output
-        cv::remap(imgleft, imgleft, M1l, M2l, cv::INTER_LINEAR);//使用矫正后的图像
+        if(flag == 0){
+            //使用左相机图像　－－校正
+            cv::initUndistortRectifyMap(K_l, D_l, R_l, P_l.rowRange(0, 3).colRange(0, 3), cv::Size(cols_l, rows_l), CV_32F,
+                                        M1l, M2l);
+            // input,  output
+            cv::remap(img, img, M1l, M2l, cv::INTER_LINEAR);//使用矫正后的图像
+        }else{
+            //使用左相机图像　－－校正
+            cv::initUndistortRectifyMap(K_r, D_r, R_r, P_r.rowRange(0, 3).colRange(0, 3), cv::Size(cols_r, rows_r), CV_32F,
+                                        M1r, M2r);
+            // input,  output
+            cv::remap(img, img, M1r, M2r, cv::INTER_LINEAR);//使用矫正后的图像
+        }
 
     }
 
@@ -152,6 +161,7 @@ namespace svo {
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V1_02_medium/mav0");
         //dataset = new EuRocData("/home/gzh/datasets/EuRoc/V2_01_easy/mav0");
 
+
         cam_ = new svo::PinholeCamera(752, 480,
                 435.2046959714599, 435.2046959714599,
                 367.4517211914062,252.2008514404297);  //使用EuRoc,yaml中的parameter
@@ -201,23 +211,24 @@ namespace svo {
             // 1.读取左图像数据
             std::stringstream ss;  //ss左图像路经：　数据集路经/cam0/data/timestamps.png
             ss << dataset->cam_data_files[0][0] << dataset->img_timestamps[0][img_id] << ".png";
-//            cout<< "读取左图像数据:" << dataset->cam_data_files[0][0]<<endl;
             cv::Mat img_left(cv::imread(ss.str().c_str(), CV_LOAD_IMAGE_UNCHANGED));
             assert(!img_left.empty());
 
             // 读取右图像数据
             std::stringstream ssr;  //ss左图像路经：　数据集路经/cam0/data/timestamps.png
             ssr << dataset->cam_data_files[1][0] << dataset->img_timestamps[0][img_id] << ".png";
-//            cout<< "读取右图像数据:" << dataset->img_timestamps[1][img_id]<<endl;
             cv::Mat img_right(cv::imread(ssr.str().c_str(), CV_LOAD_IMAGE_UNCHANGED));
             assert(!img_right.empty());
 
             // 2.圖像畸变矫正
-            DistortImg(img_left);
-            DistortImg(img_right);
+            DistortImg(img_left, 0);
+            DistortImg(img_right, 1);
 
             // 3.图像处理与跟踪定位
-            vo_->addImage(img_left, GetRealTime( dataset->img_timestamps[0][img_id] )); //改了一下timestamp
+//            vo_->addImage(img_left, GetRealTime( dataset->img_timestamps[0][img_id] )); //改了一下timestamp
+//            cout<< "读取左图像数据:" << dataset->cam_data_files[1][0] << dataset->img_timestamps[0][img_id] <<endl;
+            vo_->addImage(img_right, GetRealTime( dataset->img_timestamps[0][img_id] ));
+            cout<< "读取右图像数据:" << dataset->cam_data_files[1][0] << dataset->img_timestamps[0][img_id] <<endl;
             vo_->set_Image_id(img_id);
 
             // 4.位姿结果输出
